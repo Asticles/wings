@@ -15,8 +15,8 @@
 
 %% Utilities.
 -export([from_vs/2,to_vertices/2,from_faces/2,
-	 select_region/1,
          reachable_faces/3,
+	 select_region/1,select_region/2,
 	 select_edge_ring/1,select_edge_ring_incr/1,select_edge_ring_decr/1,
 	 cut/3,fast_cut/3,screaming_cut/3,
 	 dissolve_edges/2,dissolve_edge/2,
@@ -205,6 +205,14 @@ select_region(#st{selmode=edge}=St) ->
     wings_sel:update_sel(fun select_region/2, face, St);
 select_region(St) -> St.
 
+%% -spec select_region(Edges, We) -> setOf(Faces).
+select_region(Edges, We) when is_list(Edges) ->
+    select_region(gb_sets:from_list(Edges), We);
+select_region(Edges0, We) ->
+    Part = wings_edge_loop:partition_edges(Edges0, We),
+    Edges = select_region_borders(Edges0, We),
+    FaceSel = select_region_1(Part, Edges, We, []),
+    gb_sets:from_ordset(wings_we:visible(FaceSel, We)).
 
 %%
 %% Collect all faces reachable from Face, without crossing
@@ -563,13 +571,6 @@ stabile_neighbor(#edge{ltpr=Ea,ltsu=Eb,rtpr=Ec,rtsu=Ed}, Del) ->
 		   end, [], [Ea,Eb,Ec,Ed]),
     Edge.
 
-%%% Select region helpers.
-
-select_region(Edges0, We) ->
-    Part = wings_edge_loop:partition_edges(Edges0, We),
-    Edges = select_region_borders(Edges0, We),
-    FaceSel = select_region_1(Part, Edges, We, []),
-    gb_sets:from_ordset(wings_we:visible(FaceSel, We)).
 
 select_region_1([[AnEdge|_]|Ps], Edges, #we{es=Etab}=We, Acc) ->
     #edge{lf=Lf,rf=Rf} = array:get(AnEdge, Etab),
