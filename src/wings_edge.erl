@@ -219,14 +219,16 @@ select_region(Edges0, We) ->
 %% any of the edges in Edges.
 %%
 
--spec reachable_faces(Face, Edges, We) -> Faces when
-      Face :: face_num(),
+-spec reachable_faces(InFaces, Edges, We) -> Faces when
+      InFaces :: [face_num()] | gb_sets:set(face_num()),
       Edges :: wings_sel:edge_set(),
       We :: #we{},
       Faces :: wings_sel:face_set().
 
-reachable_faces(Face, Edges, We) ->
-    collect_faces(gb_sets:singleton(Face), We, Edges, gb_sets:empty()).
+reachable_faces(Faces, Edges, We) when is_list(Faces) ->
+    collect_faces(gb_sets:from_list(Faces), We, Edges, gb_sets:empty());
+reachable_faces(Fs, Edges, We) ->
+    collect_faces(Fs, We, Edges, gb_sets:empty()).
 
 %%%
 %%% Edge Ring. (Based on Anders Conradi's plug-in.)
@@ -574,8 +576,8 @@ stabile_neighbor(#edge{ltpr=Ea,ltsu=Eb,rtpr=Ec,rtsu=Ed}, Del) ->
 
 select_region_1([[AnEdge|_]|Ps], Edges, #we{es=Etab}=We, Acc) ->
     #edge{lf=Lf,rf=Rf} = array:get(AnEdge, Etab),
-    Left = reachable_faces(Lf, Edges, We),
-    Right = reachable_faces(Rf, Edges, We),
+    Left = reachable_faces([Lf], Edges, We),
+    Right = reachable_faces([Rf], Edges, We),
 
     %% We'll let AnEdge identify the edge loop that each
     %% face collection borders to.
